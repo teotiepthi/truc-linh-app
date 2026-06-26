@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tạo Ảnh Trúc Linh - DALL-E 3</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    background: #0f0f0f;
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 30px 16px;
+  }
+  h1 { font-size: 22px; margin-bottom: 4px; color: #e8c97a; }
+  p.sub { font-size: 13px; color: #888; margin-bottom: 24px; }
+  .card {
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-radius: 14px;
+    padding: 20px;
+    width: 100%;
+    max-width: 540px;
+    margin-bottom: 16px;
+  }
+  label { font-size: 13px; color: #aaa; display: block; margin-bottom: 6px; }
+  select, textarea {
+    width: 100%;
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 8px;
+    color: #fff;
+    padding: 10px 14px;
+    font-size: 14px;
+    margin-bottom: 14px;
+  }
+  textarea { height: 130px; resize: vertical; line-height: 1.5; }
+  button.main-btn {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #e8c97a, #c8a450);
+    color: #000;
+    font-weight: 700;
+    font-size: 15px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  button.main-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .tag {
+    background: #222;
+    border: 1px solid #333;
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 12px;
+    color: #aaa;
+    cursor: pointer;
+  }
+  .tag.active { border-color: #e8c97a; color: #e8c97a; background: #2a2410; }
+  .status { text-align: center; font-size: 14px; color: #e8c97a; padding: 10px 0; }
+  .result-img { width: 100%; border-radius: 12px; margin-top: 12px; display: none; }
+  .dl-btn {
+    display: none;
+    width: 100%;
+    margin-top: 10px;
+    padding: 12px;
+    background: #1a1a1a;
+    color: #e8c97a;
+    border: 1px solid #e8c97a55;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid #444;
+    border-top-color: #e8c97a;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .quality-row { display: flex; gap: 8px; margin-bottom: 14px; }
+  .q-btn {
+    flex: 1; padding: 8px;
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 8px;
+    color: #aaa;
+    font-size: 13px;
+    cursor: pointer;
+    text-align: center;
+  }
+  .q-btn.active { border-color: #e8c97a; color: #e8c97a; background: #2a2410; }
+  .api-input {
+    width: 100%;
+    background: #111;
+    border: 1px solid #e8c97a44;
+    border-radius: 8px;
+    color: #e8c97a;
+    padding: 10px 14px;
+    font-size: 13px;
+    margin-bottom: 14px;
+  }
+</style>
+</head>
+<body>
+
+<h1>🌸 Tạo Ảnh Trúc Linh</h1>
+<p class="sub">DALL-E 3 — HD Quality</p>
+
+<div class="card">
+  <label>🔑 OpenAI API Key:</label>
+  <input type="password" class="api-input" id="apiKey" placeholder="sk-proj-..." />
+
+  <label>📍 Bối cảnh:</label>
+  <div class="tags" id="sceneTags">
+    <span class="tag active" onclick="setScene(this,'wine bar Sài Gòn buổi tối, cầm ly rượu vang đỏ')">🍷 Wine Bar</span>
+    <span class="tag" onclick="setScene(this,'quán cà phê hiện đại Sài Gòn buổi sáng')">☕ Coffee</span>
+    <span class="tag" onclick="setScene(this,'phố Nguyễn Huệ Sài Gòn ban ngày')">🏙️ Phố SG</span>
+    <span class="tag" onclick="setScene(this,'lobby khách sạn 5 sao sang trọng')">🏨 Hotel</span>
+    <span class="tag" onclick="setScene(this,'rooftop bar tầng thượng lúc hoàng hôn')">🌅 Rooftop</span>
+    <span class="tag" onclick="setScene(this,'văn phòng hiện đại ngồi làm việc với laptop')">💼 Office</span>
+  </div>
+
+  <label>✏️ Prompt:</label>
+  <textarea id="prompt">Hyperrealistic DSLR photograph of a Vietnamese woman, 28 years old, oval face with delicate natural features, warm medium skin tone with visible pores, long dark brown hair with subtle caramel highlights, thin rectangular glasses, minimal natural makeup, tall slim figure, confident relaxed expression with slight natural asymmetry. Scene: at a wine bar in Ho Chi Minh City evening, holding red wine glass, warm bokeh restaurant background. Outfit: cream silk blouse, gold necklace. Shot on Canon EOS R5, 85mm f/1.8, ISO 800, film grain, chromatic aberration, lens vignette, natural skin imperfections. NOT AI generated, candid lifestyle photography.</textarea>
+
+  <label>📐 Kích thước:</label>
+  <select id="size">
+    <option value="1024x1024">1:1 — Vuông</option>
+    <option value="1024x1792" selected>9:16 — Dọc Portrait</option>
+    <option value="1792x1024">16:9 — Ngang</option>
+  </select>
+
+  <label>⭐ Chất lượng:</label>
+  <div class="quality-row">
+    <div class="q-btn" onclick="setQuality(this,'standard')">Standard</div>
+    <div class="q-btn active" onclick="setQuality(this,'hd')">HD ✨</div>
+  </div>
+
+  <button class="main-btn" id="genBtn" onclick="generate()">✨ Tạo Ảnh Ngay</button>
+</div>
+
+<div class="card" style="text-align:center">
+  <div class="status" id="status">Sẵn sàng 🎨</div>
+  <img id="resultImg" class="result-img" />
+  <button class="dl-btn" id="dlBtn" onclick="downloadImg()">⬇️ Tải Ảnh Về</button>
+</div>
+
+<script>
+let currentImgUrl = "";
+let selectedQuality = "hd";
+
+function setScene(el, scene) {
+  document.querySelectorAll('.tag').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  const p = document.getElementById('prompt');
+  p.value = p.value.replace(/Scene:.*?(?=Outfit:)/s, `Scene: at ${scene}. `);
+}
+
+function setQuality(el, q) {
+  document.querySelectorAll('.q-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  selectedQuality = q;
+}
+
+async function generate() {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  if (!apiKey) { alert('Nhập API key vào nha!'); return; }
+
+  const prompt = document.getElementById('prompt').value.trim();
+  const size = document.getElementById('size').value;
+  const btn = document.getElementById('genBtn');
+  const status = document.getElementById('status');
+  const img = document.getElementById('resultImg');
+  const dlBtn = document.getElementById('dlBtn');
+
+  btn.disabled = true;
+  img.style.display = 'none';
+  dlBtn.style.display = 'none';
+  status.innerHTML = '<span class="spinner"></span>Đang tạo... (~20-30 giây)';
+
+  try {
+    const res = await fetch('https://api.openai.com/v1/images/generations', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'dall-e-3',
+        prompt, n: 1, size,
+        quality: selectedQuality,
+        response_format: 'url'
+      })
+    });
+
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+
+    const imgUrl = data.data?.[0]?.url;
+    if (!imgUrl) throw new Error('Không có URL ảnh');
+
+    currentImgUrl = imgUrl;
+    img.src = imgUrl;
+    img.style.display = 'block';
+    dlBtn.style.display = 'block';
+    status.innerHTML = '✅ Xong! Ảnh Trúc Linh sẵn sàng 🌸';
+
+  } catch(err) {
+    status.innerHTML = `❌ Lỗi: ${err.message}`;
+  }
+  btn.disabled = false;
+}
+
+async function downloadImg() {
+  if (!currentImgUrl) return;
+  try {
+    const res = await fetch(currentImgUrl);
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `truc-linh-${Date.now()}.png`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch { window.open(currentImgUrl, '_blank'); }
+}
+</script>
+</body>
+</html>
